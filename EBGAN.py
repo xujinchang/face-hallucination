@@ -26,24 +26,24 @@ class generator(nn.Module):
             self.output_dim = 3
 
         self.conv = nn.Sequential(
-            nn.conv2d(3,64,3,1,1),
+            nn.Conv2d(3,64,3,1,1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.conv2d(64,128,3,1,1),
+            nn.Conv2d(64,128,3,1,1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.conv2d(128,256,3,1,1),
+            nn.Conv2d(128,256,3,1,1),
             nn.BatchNorm2d(256),
             nn.ReLU(),
-            nn.conv2d(128,256,3,1,1),
+            nn.Conv2d(256,256,3,1,1),
             nn.BatchNorm2d(256),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             )
         self.pre_fc = nn.Sequential(
-            nn.Linear(256,62),
+            nn.Linear(256 * 8 * 8, 62),
             nn.BatchNorm1d(62),
             nn.ReLU(),
             )
@@ -66,6 +66,9 @@ class generator(nn.Module):
 
     def forward(self, input):
         x = self.conv(input)
+        x = x.view(x.size()[0], -1)
+        # import pdb
+        # pdb.set_trace()
         x = self.pre_fc(x)
         x = self.fc(x)
         x = x.view(-1, 128, (self.input_height // 4), (self.input_width // 4))
@@ -166,7 +169,8 @@ class EBGAN(object):
                 batch_size=self.batch_size, shuffle=True)
         elif self.dataset == 'celebA':
 
-            train_set = get_training_set('/home/tmp_data_dir/zhaoyu/CelebA/img_align_celeba/', '/home/tmp_data_dir/zhaoyu/CelebA/img_align_celeba/')
+            # train_set = get_training_set('/home/tmp_data_dir/zhaoyu/CelebA/img_align_celeba/', '/home/tmp_data_dir/zhaoyu/CelebA/img_align_celeba/')
+            train_set = get_training_set('/home/xujinchang/pytorch-CycleGAN-and-pix2pix/datasets/celeA_part/train/', '/home/xujinchang/pytorch-CycleGAN-and-pix2pix/datasets/celeA_part/train/')
             self.data_loader = DataLoader(dataset=train_set, batch_size=self.batch_size, shuffle=True)
             # self.data_loader = utils.load_celebA('data/celebA', transform=transforms.Compose(
             #     [transforms.CenterCrop(160), transforms.Scale(64), transforms.ToTensor()]), batch_size=self.batch_size,
@@ -208,6 +212,8 @@ class EBGAN(object):
                 else:
                     x_, y_ = Variable(x_), Variable(y_)
 
+
+    
                 # update D network
                 self.D_optimizer.zero_grad()
 
