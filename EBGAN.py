@@ -5,6 +5,9 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
+from data import get_training_set, get_test_set
+
+
 
 class generator(nn.Module):
     # Network Architecture is exactly same as in infoGAN (https://arxiv.org/abs/1606.03657)
@@ -162,9 +165,12 @@ class EBGAN(object):
                     [transforms.ToTensor()])),
                 batch_size=self.batch_size, shuffle=True)
         elif self.dataset == 'celebA':
-            self.data_loader = utils.load_celebA('data/celebA', transform=transforms.Compose(
-                [transforms.CenterCrop(160), transforms.Scale(64), transforms.ToTensor()]), batch_size=self.batch_size,
-                                                 shuffle=True)
+
+            train_set = get_training_set('/home/tmp_data_dir/zhaoyu/CelebA/img_align_celeba/', '/home/tmp_data_dir/zhaoyu/CelebA/img_align_celeba/')
+            self.data_loader = DataLoader(dataset=train_set, batch_size=self.batch_size, shuffle=True)
+            # self.data_loader = utils.load_celebA('data/celebA', transform=transforms.Compose(
+            #     [transforms.CenterCrop(160), transforms.Scale(64), transforms.ToTensor()]), batch_size=self.batch_size,
+            #                                      shuffle=True)
         self.z_dim = 62
 
         # fixed noise
@@ -191,24 +197,24 @@ class EBGAN(object):
         for epoch in range(self.epoch):
             self.G.train()
             epoch_start_time = time.time()
-            for iter, (x_, _) in enumerate(self.data_loader):
+            for iter, (x_, y_) in enumerate(self.data_loader):
                 if iter == self.data_loader.dataset.__len__() // self.batch_size:
                     break
 
-                z_ = torch.rand((self.batch_size, self.z_dim))
-
+                # z_ = torch.rand((self.batch_size, self.z_dim))
+                # z_ = x_
                 if self.gpu_mode:
-                    x_, z_ = Variable(x_.cuda()), Variable(z_.cuda())
+                    x_, y_ = Variable(x_.cuda()), Variable(y_.cuda())
                 else:
-                    x_, z_ = Variable(x_), Variable(z_)
+                    x_, y_ = Variable(x_), Variable(y_)
 
                 # update D network
                 self.D_optimizer.zero_grad()
 
-                D_real, D_real_code = self.D(x_)
-                D_real_err = self.MSE_loss(D_real, x_)
+                D_real, D_real_code = self.D(y_)
+                D_real_err = self.MSE_loss(D_real, y_)
 
-                G_ = self.G(z_)
+                G_ = self.G(x_)
                 D_fake, D_fake_code = self.D(G_)
                 D_fake_err = self.MSE_loss(D_fake, G_.detach())
                 if list(self.margin-D_fake_err.data)[0] > 0:
@@ -223,7 +229,7 @@ class EBGAN(object):
                 # update G network
                 self.G_optimizer.zero_grad()
 
-                G_ = self.G(z_)
+                G_ = self.G(x_)
                 D_fake, D_fake_code = self.D(G_)
                 D_fake_err = self.MSE_loss(D_fake, G_.detach())
                 G_loss = D_fake_err + self.pt_loss_weight * self.pullaway_loss(D_fake_code)
@@ -237,7 +243,7 @@ class EBGAN(object):
                           ((epoch + 1), (iter + 1), self.data_loader.dataset.__len__() // self.batch_size, D_loss.data[0], G_loss.data[0]))
 
             self.train_hist['per_epoch_time'].append(time.time() - epoch_start_time)
-            self.visualize_results((epoch+1))
+            # self.visualize_results((epoch+1))
 
         self.train_hist['total_time'].append(time.time() - start_time)
         print("Avg one epoch time: %.2f, total %d epochs time: %.2f" % (np.mean(self.train_hist['per_epoch_time']),
