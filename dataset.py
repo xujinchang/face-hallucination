@@ -67,15 +67,14 @@ class DatasetFromFolder2(data.Dataset):
        
     def __getitem__(self, index):
         input = load_img(self.train_filename[index])
-        target = load_img(self.label_filename[index])
         if self.target_transform1:
-            target1 = self.target_transform1(target)
+            target1 = self.target_transform1(input)
 
         if self.input_transform:
-            input = self.input_transform(input) #downsample
-        return input, target1
+            input1 = self.input_transform(input) #downsample
+        return input1, target1
 
     def __len__(self):
-        print (len(self.train_filename))
-        print (len(self.label_filename))
+        # print (len(self.train_filename))
+        # print (len(self.label_filename))
         return len(self.train_filename)

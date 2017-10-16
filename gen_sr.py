@@ -18,7 +18,7 @@ save_folder = './save_demo/'
 #      image_list.append(line)
 
 G_model = generator('celebA')
-G_model.load_state_dict(torch.load('./models/celebA/EBGAN_25/EBGAN_G.pkl'))
+G_model.load_state_dict(torch.load('./models/celebA/EBGAN/EBGAN_G_14.pkl'))
 print G_model
 G_model = G_model.cpu()
 image_list = ['./111000.jpg']

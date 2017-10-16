@@ -16,16 +16,14 @@ from dataset import DatasetFromFolder1, DatasetFromFolder2
 
 def input_transform(crop_size):
     return Compose([
-        CenterCrop[crop_size, crop_size],
-        Scale((64,64)),
-        Scale((32,32)),
+        CenterCrop(crop_size),
         Scale((64,64)),
         ToTensor(),
         ])
 
 def target_transform1(crop_size):
     return Compose([
-        CenterCrop[crop_size, crop_size],
+        CenterCrop(crop_size),
         Scale((64,64)),
         ToTensor(),
         ])

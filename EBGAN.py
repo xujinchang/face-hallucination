@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from data import get_training_set, get_test_set
 
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 class generator(nn.Module):
     # Network Architecture is exactly same as in infoGAN (https://arxiv.org/abs/1606.03657)
@@ -169,8 +169,8 @@ class EBGAN(object):
                 batch_size=self.batch_size, shuffle=True)
         elif self.dataset == 'celebA':
 
-            # train_set = get_training_set('/home/tmp_data_dir/zhaoyu/CelebA/img_align_celeba/', '/home/tmp_data_dir/zhaoyu/CelebA/img_align_celeba/')
-            train_set = get_training_set('/home/xujinchang/pytorch-CycleGAN-and-pix2pix/datasets/celeA_part/train/', '/home/xujinchang/pytorch-CycleGAN-and-pix2pix/datasets/celeA_part/train/')
+            train_set = get_training_set('/home/tmp_data_dir/zhaoyu/CelebA/img_align_celeba/', '/home/tmp_data_dir/zhaoyu/CelebA/img_align_celeba/')
+            # train_set = get_training_set('/home/xujinchang/pytorch-CycleGAN-and-pix2pix/datasets/celeA_part/train/', '/home/xujinchang/pytorch-CycleGAN-and-pix2pix/datasets/celeA_part/train/')
             self.data_loader = DataLoader(dataset=train_set, batch_size=self.batch_size, shuffle=True)
             # self.data_loader = utils.load_celebA('data/celebA', transform=transforms.Compose(
             #     [transforms.CenterCrop(160), transforms.Scale(64), transforms.ToTensor()]), batch_size=self.batch_size,
@@ -250,16 +250,17 @@ class EBGAN(object):
 
             self.train_hist['per_epoch_time'].append(time.time() - epoch_start_time)
             # self.visualize_results((epoch+1))
+            self.save(epoch+1)
 
         self.train_hist['total_time'].append(time.time() - start_time)
         print("Avg one epoch time: %.2f, total %d epochs time: %.2f" % (np.mean(self.train_hist['per_epoch_time']),
               self.epoch, self.train_hist['total_time'][0]))
         print("Training finish!... save training results")
 
-        self.save()
-        utils.generate_animation(self.result_dir + '/' + self.dataset + '/' + self.model_name + '/' + self.model_name,
-                                 self.epoch)
-        utils.loss_plot(self.train_hist, os.path.join(self.save_dir, self.dataset, self.model_name), self.model_name)
+        self.save(epoch+1)
+        # utils.generate_animation(self.result_dir + '/' + self.dataset + '/' + self.model_name + '/' + self.model_name,
+                                 # self.epoch)
+        # utils.loss_plot(self.train_hist, os.path.join(self.save_dir, self.dataset, self.model_name), self.model_name)
 
     def pullaway_loss(self, embeddings):
         """ pullaway_loss tensorflow version code
@@ -287,12 +288,20 @@ class EBGAN(object):
         if not os.path.exists(self.result_dir + '/' + self.dataset + '/' + self.model_name):
             os.makedirs(self.result_dir + '/' + self.dataset + '/' + self.model_name)
 
+        train_set = get_training_set('/home/xujinchang/pytorch-CycleGAN-and-pix2pix/datasets/celeA_part/train/', '/home/xujinchang/pytorch-CycleGAN-and-pix2pix/datasets/celeA_part/train/')
+        data_loader = DataLoader(dataset=train_set, batch_size=self.batch_size, shuffle=False)
+        for iter, (x_, y_) in enumerate(data_loader):
+            if self.gpu_mode:
+                x_, y_ = Variable(x_.cuda()), Variable(y_.cuda())
+            else:
+                x_, y_ = Variable(x_), Variable(y_)
+            break
         tot_num_samples = min(self.sample_num, self.batch_size)
         image_frame_dim = int(np.floor(np.sqrt(tot_num_samples)))
 
         if fix:
             """ fixed noise """
-            samples = self.G(self.sample_z_)
+            samples = self.G(x_)
         else:
             """ random noise """
             if self.gpu_mode:
@@ -310,14 +319,14 @@ class EBGAN(object):
         utils.save_images(samples[:image_frame_dim * image_frame_dim, :, :, :], [image_frame_dim, image_frame_dim],
                           self.result_dir + '/' + self.dataset + '/' + self.model_name + '/' + self.model_name + '_epoch%03d' % epoch + '.png')
 
-    def save(self):
+    def save(self, epoch):
         save_dir = os.path.join(self.save_dir, self.dataset, self.model_name)
 
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
-        torch.save(self.G.state_dict(), os.path.join(save_dir, self.model_name + '_G.pkl'))
-        torch.save(self.D.state_dict(), os.path.join(save_dir, self.model_name + '_D.pkl'))
+        torch.save(self.G.state_dict(), os.path.join(save_dir, self.model_name + '_G_' + str(epoch) + '.pkl'))
+        torch.save(self.D.state_dict(), os.path.join(save_dir, self.model_name + '_D_' + str(epoch) + '.pkl'))
 
         with open(os.path.join(save_dir, self.model_name + '_history.pkl'), 'wb') as f:
             pickle.dump(self.train_hist, f)

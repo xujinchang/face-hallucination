@@ -1,15 +1,18 @@
 import argparse, os
-from GAN import GAN
-from CGAN import CGAN
-from LSGAN import LSGAN
-from DRAGAN import DRAGAN
-from ACGAN import ACGAN
-from WGAN import WGAN
-from WGAN_GP import WGAN_GP
-from infoGAN import infoGAN
-from EBGAN import EBGAN
-from BEGAN import BEGAN
+# from GAN import GAN
+# from CGAN import CGAN
+# from LSGAN import LSGAN
+# from DRAGAN import DRAGAN
+# from ACGAN import ACGAN
+# from WGAN import WGAN
+# from WGAN_GP import WGAN_GP
+# from infoGAN import infoGAN
 
+# from BEGAN import BEGAN
+
+from EBGAN import EBGAN
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 """parsing and configuration"""
 def parse_args():
     desc = "Pytorch implementation of GAN collections"
@@ -101,7 +104,7 @@ def main():
 
     # visualize learned generator
     # gan.visualize_results(args.epoch)
-    # print(" [*] Testing finished!")
+    print(" [*] Testing finished!")
 
 if __name__ == '__main__':
     main()
